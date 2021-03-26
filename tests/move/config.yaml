@@ -1,5 +1,14 @@
 folders:
+    - intermediate
     - dest
+scripts:
+- script: |-
+    for mail in processor:
+        mail.move("intermediate")
+- folder: intermediate
+  script: |-
+    for mail in processor:
+        mail.move("dest")
 expected:
     dest/new:
         some-message-id: ""

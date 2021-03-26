@@ -23,29 +23,44 @@ We install mailprocessing as a global python package.
 ## Writing Tests
 
 Each subdirectory within the `tests/` directory is one test run.  Within that
-should exist a few specific files:
+directory, all files with names starting with `mail` are first inserted into the
+mailbox (by actually mailing to `root@localhost`).  There must also be a
+`config.yaml` file to describe the test case.  It is expected to have the
+following top-level keys:
 
-File Name | Description
---- | ---
-`rc` | The mailprocessing script to execute
-`mail*` | Mail to process; they should contain all relevant headers.
-`config.yaml` | Test configuration; see below.
+### `folders`
 
-The file `config.yaml` describes the test configuration; it must have a
-`expected` child, describing the desired state after processing.  This is a
-dictionary keyed by (flattened) folders, each containing messages keyed by
-the `Message-Id` header, and maildir-style flags as the value.
+This is an optional key; if it exists, the values is a list of folders that must
+be created before running the test case.  This is required as `mailprocessing`
+currently does not create folders before moving.
 
-The configuration may also have a `folders` key, providing a list of folders
-that must be created before running the test.
+### `scripts`
 
-Sample test configuration:
+A mapping containing the following:
+
+Key | Optional | Description
+--- | --- | ---
+`script` | Required | The literal script to run.
+`folder` | Optional | The folder to run the script in; defaults to the root.
+
+### `expected`
+
+A mapping describing the expected final state.  Each key is an expected folder,
+which in turns contains a mapping describing the messages in that folder.  The
+messages use their `Message-Id` header as the key, and the value is the flags
+(as expected by maildir).
+
+### Sample test configuration:
 ```yaml
 expected:
   new: # The top level directory
-    some-message-id: S
+    some-message-id: S # This message should be marked as Seen
   deeply/nested/subfolder/cur:
     another-message-id: "" # no flags
+scripts:
+- script: |-
+    for mail in processor:
+      pass
 folders:
   - parent
   - parent/child

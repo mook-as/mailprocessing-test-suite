@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import contextlib
 import email
 import email.policy
 import os
@@ -7,6 +8,7 @@ import os.path
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 
 import yaml
@@ -50,11 +52,9 @@ class MailProcessingTestCase(unittest.TestCase):
         args = [
             "--once",
             "--maildir-base=/root/Maildir",
-            "--rcfile={0}".format(os.path.join(self.dir.path, "rc")),
             "--logfile={0}".format(os.path.join(self.dir.path,
                                    "maildirproc.log")),
             "--log-level=99",
-            "--maildir=.",
             "--folder-separator=/",
         ]
 
@@ -65,30 +65,46 @@ class MailProcessingTestCase(unittest.TestCase):
                         os.path.join("/root/Maildir", folder, child),
                         exist_ok=True)
 
-        try:
-            subprocess.run(["maildirproc"] + args, check=True)
-            actual = {}
-            for dirpath, dirnames, filenames in os.walk("/root/Maildir"):
-                relpath = os.path.relpath(dirpath, "/root/Maildir")
-                if len(filenames) < 1:
-                    continue
-                actual[relpath] = dict()
-                for filename in filenames:
-                    with open(os.path.join(dirpath, filename)) as mail_file:
-                        mail = email.message_from_file(
-                            mail_file, policy=email.policy.default)
-                    flags = ""
-                    _, sep, end = filename.rpartition(":2,")
-                    if sep == ":2,":
-                        flags = end
-                    actual[relpath][mail["Message-ID"]] = flags
-                    self.assertEqual(self.config["expected"], actual,
-            "Unexpected result in {0}".format(self.dir.name))
-        except:
-            # It is okay for this to fail
-            subprocess.run(["cat", os.path.join(
-                self.dir.path, "maildirproc.log")])
-            raise
+        for script in self.config["scripts"]:
+            script_args = args.copy()
+            if "folder" in script:
+                script_args.append(
+                    "--maildir={0}".format(script["folder"]))
+            else:
+                script_args.append("--maildir=.")
+            with contextlib.ExitStack() as context_stack:
+                script_file = tempfile.NamedTemporaryFile("w")
+                context_stack.push(script_file)
+                script_file.writelines(script["script"].split("\n"))
+                script_file.flush()
+                script_args.append("--rcfile={0}".format(script_file.name))
+
+                log_file = tempfile.NamedTemporaryFile("w+")
+                context_stack.push(log_file)
+                try:
+                    subprocess.run(["maildirproc"] + script_args, check=True,
+                                   stdout=log_file, stderr=subprocess.STDOUT)
+                except:
+                    log_file.seek(0, os.SEEK_SET)
+                    sys.stderr.writelines(log_file.readlines())
+                    raise
+        actual = {}
+        for dirpath, dirnames, filenames in os.walk("/root/Maildir"):
+            relpath = os.path.relpath(dirpath, "/root/Maildir")
+            if len(filenames) < 1:
+                continue
+            actual[relpath] = dict()
+            for filename in filenames:
+                with open(os.path.join(dirpath, filename)) as mail_file:
+                    mail = email.message_from_file(
+                        mail_file, policy=email.policy.default)
+                flags = ""
+                _, sep, end = filename.rpartition(":2,")
+                if sep == ":2,":
+                    flags = end
+                actual[relpath][mail["Message-ID"]] = flags
+                self.assertEqual(self.config["expected"], actual,
+                                 "Unexpected result in {0}".format(self.dir.name))
 
 
 def main():
@@ -103,7 +119,7 @@ def main():
     suite = unittest.TestSuite()
     for dir in os.scandir("/tests"):
         suite.addTest(MailProcessingTestCase(dir))
-    result = unittest.TextTestRunner().run(suite)
+    result = unittest.TextTestRunner(buffer=True).run(suite)
     sys.exit(0 if result.wasSuccessful() else 1)
 
 

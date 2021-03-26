@@ -1,3 +1,7 @@
+scripts:
+- script: |-
+    for mail in processor:
+        pass
 expected:
     new:
         some-message-id: ""
