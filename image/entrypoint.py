@@ -16,7 +16,8 @@ import yaml
 
 class MailProcessingTestCase(unittest.TestCase):
     def __init__(self, dir):
-        super(MailProcessingTestCase, self).__init__("test_item")
+        setattr(self, f"test_{dir.name}", self.test_item)
+        super(MailProcessingTestCase, self).__init__(f"test_{dir.name}")
         self.dir = dir
 
     def setUp(self):
@@ -114,7 +115,10 @@ def main():
     except FileNotFoundError:
         subprocess.run(["pip", "install", "mailprocessing"], check=True)
     else:
-        subprocess.run(["/src/setup.py", "install", "--verbose"])
+        # Assume that the source is read-only
+        shutil.copytree("/src", "/build")
+        subprocess.run(["./setup.py", "build"], check=True, cwd="/build")
+        subprocess.run(["./setup.py", "install"], check=True, cwd="/build")
 
     suite = unittest.TestSuite()
     for dir in os.scandir("/tests"):
