@@ -29,15 +29,24 @@ File Name | Description
 --- | ---
 `rc` | The mailprocessing script to execute
 `mail*` | Mail to process; they should contain all relevant headers.
-`expected.yaml` | Expected output; see below.
+`config.yaml` | Test configuration; see below.
 
-The file `expected.yaml` should describe the desired state after processing.  It
-is a dictionary keyed by (flattened) folders, each containing messages keyed by
+The file `config.yaml` describes the test configuration; it must have a
+`expected` child, describing the desired state after processing.  This is a
+dictionary keyed by (flattened) folders, each containing messages keyed by
 the `Message-Id` header, and maildir-style flags as the value.
 
+The configuration may also have a `folders` key, providing a list of folders
+that must be created before running the test.
+
+Sample test configuration:
 ```yaml
-new: # The top level directory
+expected:
+  new: # The top level directory
     some-message-id: S
-deeply/nested/subfolder/cur:
+  deeply/nested/subfolder/cur:
     another-message-id: "" # no flags
+folders:
+  - parent
+  - parent/child
 ```

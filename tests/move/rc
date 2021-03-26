@@ -1,0 +1,2 @@
+for mail in processor:
+    mail.move("dest")

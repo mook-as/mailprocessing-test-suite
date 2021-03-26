@@ -1,1 +1,3 @@
 #!/usr/bin/env python
+for mail in processor:
+    pass

@@ -25,8 +25,8 @@ class MailProcessingTestCase(unittest.TestCase):
         subprocess.run(["postfix", "start"], check=True)
         subprocess.run(["dovecot"], check=True)
 
-        with open(os.path.join(self.dir.path, "expected.yaml")) as input:
-            self.expected = yaml.load(input, Loader=yaml.SafeLoader)
+        with open(os.path.join(self.dir.path, "config.yaml")) as input:
+            self.config = yaml.load(input, Loader=yaml.SafeLoader)
 
         self.send_mail()
 
@@ -54,7 +54,17 @@ class MailProcessingTestCase(unittest.TestCase):
             "--logfile={0}".format(os.path.join(self.dir.path,
                                    "maildirproc.log")),
             "--log-level=99",
+            "--maildir=.",
+            "--folder-separator=/",
         ]
+
+        if "folders" in self.config:
+            for folder in self.config["folders"]:
+                for child in ["cur", "new", "tmp"]:
+                    os.makedirs(
+                        os.path.join("/root/Maildir", folder, child),
+                        exist_ok=True)
+
         try:
             subprocess.run(["maildirproc"] + args, check=True)
             actual = {}
@@ -72,8 +82,8 @@ class MailProcessingTestCase(unittest.TestCase):
                     if sep == ":2,":
                         flags = end
                     actual[relpath][mail["Message-ID"]] = flags
-            self.assertEqual(self.expected, actual,
-                             "Unexpected result in {0}".format(self.dir.name))
+                    self.assertEqual(self.config["expected"], actual,
+            "Unexpected result in {0}".format(self.dir.name))
         except:
             # It is okay for this to fail
             subprocess.run(["cat", os.path.join(

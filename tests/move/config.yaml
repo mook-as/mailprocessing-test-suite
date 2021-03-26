@@ -1,0 +1,5 @@
+folders:
+    - dest
+expected:
+    dest/new:
+        some-message-id: ""
