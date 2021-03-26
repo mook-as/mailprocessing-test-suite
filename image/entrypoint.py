@@ -104,8 +104,8 @@ class MailProcessingTestCase(unittest.TestCase):
                 if sep == ":2,":
                     flags = end
                 actual[relpath][mail["Message-ID"]] = flags
-                self.assertEqual(self.config["expected"], actual,
-                                 "Unexpected result in {0}".format(self.dir.name))
+        self.assertEqual(self.config["expected"], actual,
+                         "Unexpected result in {0}".format(self.dir.name))
 
 
 def main():

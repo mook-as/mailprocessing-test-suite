@@ -1,0 +1,11 @@
+folders:
+- dest
+scripts:
+- script: |-
+    for mail in processor:
+        mail.copy("dest", create=True)
+expected:
+    new:
+        some-message-id: ""
+    dest/new:
+        some-message-id: ""
