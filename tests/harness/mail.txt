@@ -1,5 +1,0 @@
-Message-Id: some-message-id
-To: root@localhost
-Subject: Some Subject
-
-This is a test message.

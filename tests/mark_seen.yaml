@@ -1,0 +1,7 @@
+scripts:
+- script: |-
+    for mail in processor:
+        mail.mark_seen()
+expected:
+    .:
+        some-message-id: "S"

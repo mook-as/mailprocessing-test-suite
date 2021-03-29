@@ -1,0 +1,11 @@
+scripts:
+- script: |-
+    for mail in processor:
+        mail.move("intermediate", create=True)
+- folder: .intermediate
+  script: |-
+    for mail in processor:
+        mail.move("dest", create=True)
+expected:
+    .dest:
+        some-message-id: ""

@@ -1,0 +1,4 @@
+passdb {
+    driver = static
+    args = password=password
+}

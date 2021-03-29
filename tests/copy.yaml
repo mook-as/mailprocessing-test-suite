@@ -1,11 +1,12 @@
-folders:
-- dest
 scripts:
 - script: |-
     for mail in processor:
         mail.copy("dest", create=True)
+        mail.copy("nested/folder", create=True)
 expected:
-    new:
+    .:
         some-message-id: ""
-    dest/new:
+    .dest:
+        some-message-id: ""
+    .nested.folder:
         some-message-id: ""
